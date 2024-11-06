@@ -35,7 +35,7 @@ public class Main {
     public static boolean resolveOSudoku() {
         for (int i = 0; i < sudoku.length; i++) {
             for (int j = 0; j < sudoku[i].length; j++) {
-                if (sudoku[i][j] == null) { // Se a célula for vazia
+                if (sudoku[i][j] == null) {
                     for (int num = 1; num <= 9; num++) { // Tentar números de 1 a 9
                         if (validador(i, j, num)) { // Verificar se o número é válido
                             sudoku[i][j] = num;  // Atribui o número
