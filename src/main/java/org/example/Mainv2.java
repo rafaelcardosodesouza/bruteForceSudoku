@@ -1,6 +1,9 @@
 package org.example;
 
-public class Main {
+import java.util.ArrayList;
+import java.util.List;
+
+public class Mainv2 {
 
     public static final String ANSI_GREEN = "\u001B[32m";
     public static final String ANSI_RED = "\u001B[31m";
@@ -18,50 +21,78 @@ public class Main {
             {null, 7, 4, 2, 9, null, 5, null, null}
     };
 
-    // Contador para as tentativas
-    private static int contadorTentativas = 0;
+    public static int tentaticas = 0;  // Contador de tentativas global
 
     public static void main(String[] args) {
         printSudoku();
         if (resolveOSudoku()) {
-            System.out.println("\nTa resolvido papai!");
+            System.out.println("\nTa resolvido papai! Tentativas: " + tentaticas);  // Exibe o número total de tentativas
         } else {
             System.out.println("\nDeu ruim, não tem solução.");
         }
-        // Exibe o total de tentativas após a execução
-        System.out.println("\nTotal de tentativas: " + contadorTentativas);
     }
 
+    // Função para resolver o Sudoku priorizando as células com menos candidatos (mais preenchidas)
     public static boolean resolveOSudoku() {
-        for (int i = 0; i < sudoku.length; i++) {
-            for (int j = 0; j < sudoku[i].length; j++) {
-                if (sudoku[i][j] == null) { // Se a célula for vazia
-                    for (int num = 1; num <= 9; num++) { // Tentar números de 1 a 9
-                        if (validador(i, j, num)) { // Verificar se o número é válido
-                            sudoku[i][j] = num;  // Atribui o número
-
-                            if (resolveOSudoku()) {  // Recursão: tentar resolver o Sudoku
-                                return true; // Se resolver, retorna true
-                            }
-
-                            sudoku[i][j] = null; // Se não for válido, desfaz a tentativa
-                        } else {
-                            // Exibe a tentativa incorreta em vermelho
-                            System.out.print(ANSI_RED + num + ANSI_RESET + " | ");
-                            espera();
-                        }
-
-                        // Incrementa o contador a cada tentativa
-                        contadorTentativas++;
+        // Encontre a célula com menos candidatos
+        int i = -1, j = -1;
+        int minCandidatos = 10;  // Mais do que o máximo possível de candidatos (9)
+        for (int linha = 0; linha < sudoku.length; linha++) {
+            for (int coluna = 0; coluna < sudoku[linha].length; coluna++) {
+                if (sudoku[linha][coluna] == null) {  // Só verificar células vazias
+                    List<Integer> candidatos = calcularCandidatos(linha, coluna);
+                    if (candidatos.size() < minCandidatos) {
+                        minCandidatos = candidatos.size();
+                        i = linha;
+                        j = coluna;
                     }
-                    return false;  // Se não encontrar uma solução válida, retorna false
                 }
             }
-            limpaTela();
-            printSudoku();
-            espera();
         }
-        return true;  // Se todas as células foram preenchidas corretamente
+
+        // Se não tiver vazias, o Sudoku está resolvido
+        if (i == -1 && j == -1) {
+            System.out.println("resolvido com: " + tentaticas + " tentativas");  // Exibe o número total de tentativas
+            return true;
+        }
+
+        // Tentar preencher a célula com os candidatos encontrados
+        List<Integer> candidatos = calcularCandidatos(i, j);
+        System.out.println("Candidatos para a posição (" + i + "," + j + "): " + candidatos);  // Exibe os candidatos
+
+        for (int num : candidatos) {
+            tentaticas++;  // Incrementa a tentativa
+            if (!validador(i, j, num)) {  // Se o número não for válido, exibe ele
+                System.out.println(ANSI_RED + "Número inválido: " + num + ANSI_RESET);
+            } else {
+                sudoku[i][j] = num;
+                limpaTela();
+                printSudoku();  // Imprime o estado atual do Sudoku
+
+                espera();
+
+                if (resolveOSudoku()) {  // Recursão para continuar resolvendo
+                    return true;
+                }
+
+                espera();
+                // Se não funcionar, desfaz a tentativa
+                sudoku[i][j] = null;
+            }
+        }
+
+        return false;  // Se não conseguiu resolver
+    }
+
+    // Função para calcular os candidatos válidos para a célula (i, j)
+    public static List<Integer> calcularCandidatos(int i, int j) {
+        List<Integer> candidatos = new ArrayList<>();
+        for (int x = 1; x <= 9; x++) {
+            if (validador(i, j, x)) {
+                candidatos.add(x);
+            }
+        }
+        return candidatos;
     }
 
     // Função para validar se o número pode ser colocado na posição (i, j)
@@ -73,7 +104,7 @@ public class Main {
     public static boolean verificadorLinha(int i, int num) {
         for (int x = 0; x < 9; x++) {
             if (sudoku[i][x] != null && sudoku[i][x] == num) {
-                return true; // Número encontrado na linha
+                return true;  // Número encontrado na linha
             }
         }
         return false;
@@ -83,16 +114,16 @@ public class Main {
     public static boolean verificadorColuna(int j, int num) {
         for (int x = 0; x < 9; x++) {
             if (sudoku[x][j] != null && sudoku[x][j] == num) {
-                return true; // Número encontrado na coluna
+                return true;  // Número encontrado na coluna
             }
         }
         return false;
     }
 
-    // Verifica se o número já está na 3x3 garante que o número não está repetido na mesma grade
+    // Verifica se o número já está na 3x3
     public static boolean verificadorGrade(int i, int j, int num) {
-        int linhaInicial = i / 3 * 3; // Determina a linha inicial da subgrade
-        int colunaInicial = j / 3 * 3; // Determina a coluna inicial da subgrade
+        int linhaInicial = i / 3 * 3;
+        int colunaInicial = j / 3 * 3;
 
         for (int linha = linhaInicial; linha < linhaInicial + 3; linha++) {
             for (int coluna = colunaInicial; coluna < colunaInicial + 3; coluna++) {
@@ -118,6 +149,7 @@ public class Main {
         }
     }
 
+    // Função para limpar a tela
     public static void limpaTela() {
         try {
             String sistema = System.getProperty("os.name");
@@ -132,10 +164,10 @@ public class Main {
         }
     }
 
-    public static void espera(){
+    // Função para simular uma pausa
+    public static void espera() {
         try {
-            // Espera de 100 milissegundos (meio segundo)
-            Thread.sleep(0);
+            Thread.sleep(0);  // Pausa de 500 milissegundos
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
